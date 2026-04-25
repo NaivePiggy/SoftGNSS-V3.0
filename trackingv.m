@@ -96,8 +96,15 @@ trackResults.CNo.VSMValue = ...
 trackResults.CNo.VSMIndex = ...
     zeros(1,floor(tracklength/settings.CNo.VSMinterval));
 
-trackResults.CNo.PRMValue=0; %To avoid error message when
-trackResults.CNo.PRMIndex=0; %tracking window is closed before completion.
+trackResults.CNo.PRMValue = ...
+    zeros(1, floor(tracklength/settings.CNo.PRM_K));
+trackResults.CNo.PRMIndex = ...
+    zeros(1, floor(tracklength/settings.CNo.PRM_K));
+
+trackResults.CNo.MOMValue = ...
+    zeros(1, floor(tracklength/settings.CNo.MOMinterval));
+trackResults.CNo.MOMIndex = ...
+    zeros(1, floor(tracklength/settings.CNo.MOMinterval));
 
 %--- Copy initial settings for all channels -------------------------------
 trackResults = repmat(trackResults, 1, settings.numberOfChannels);
@@ -203,7 +210,6 @@ for channelNr = 1:NumChan%settings.numberOfChannels
         remCarrPhase(1,channelNr)=0;
  
         %C/No computation
-%         vsmCnt(channelNr)  = 0;
         if (settings.CNo.enableVSM==1)
             CNo='Calculating...';
         else
@@ -395,6 +401,26 @@ for sectcnt=1:sectno
                         trackResults(activeChnList(m)).CNo.VSMValue(loopCnt/settings.CNo.VSMinterval)=CNoValue;
                         trackResults(activeChnList(m)).CNo.VSMIndex(loopCnt/settings.CNo.VSMinterval)=loopCnt;
 
+                    end
+                end
+
+                if (settings.CNo.enablePRM==1)
+                    if (rem(loopCnt,settings.CNo.PRM_K)==0)
+                        CNoValue=CNoPRM(trackResults(activeChnList(m)).I_P(loopCnt-settings.CNo.PRM_K+1:loopCnt),...
+                            trackResults(activeChnList(m)).Q_P(loopCnt-settings.CNo.PRM_K+1:loopCnt),...
+                            settings.CNo.accTime,settings.CNo.PRM_M);
+                        trackResults(activeChnList(m)).CNo.PRMValue(loopCnt/settings.CNo.PRM_K)=CNoValue;
+                        trackResults(activeChnList(m)).CNo.PRMIndex(loopCnt/settings.CNo.PRM_K)=loopCnt;
+                    end
+                end
+
+                if (settings.CNo.enableMOM==1)
+                    if (rem(loopCnt,settings.CNo.MOMinterval)==0)
+                        CNoValue=CNoMOM(trackResults(activeChnList(m)).I_P(loopCnt-settings.CNo.MOMinterval+1:loopCnt),...
+                            trackResults(activeChnList(m)).Q_P(loopCnt-settings.CNo.MOMinterval+1:loopCnt),...
+                            settings.CNo.accTime);
+                        trackResults(activeChnList(m)).CNo.MOMValue(loopCnt/settings.CNo.MOMinterval)=CNoValue;
+                        trackResults(activeChnList(m)).CNo.MOMIndex(loopCnt/settings.CNo.MOMinterval)=loopCnt;
                     end
                 end
 

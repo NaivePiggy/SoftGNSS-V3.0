@@ -88,8 +88,15 @@ trackResults.CNo.VSMValue = ...
 trackResults.CNo.VSMIndex = ...
     zeros(1,floor(settings.msToProcess/settings.CNo.VSMinterval));
 
-trackResults.CNo.PRMValue=0; %To avoid error message when
-trackResults.CNo.PRMIndex=0; %tracking window is closed before completion.
+trackResults.CNo.PRMValue = ...
+    zeros(1, floor(settings.msToProcess/settings.CNo.PRM_K));
+trackResults.CNo.PRMIndex = ...
+    zeros(1, floor(settings.msToProcess/settings.CNo.PRM_K));
+
+trackResults.CNo.MOMValue = ...
+    zeros(1, floor(settings.msToProcess/settings.CNo.MOMinterval));
+trackResults.CNo.MOMIndex = ...
+    zeros(1, floor(settings.msToProcess/settings.CNo.MOMinterval));
 
 %--- Copy initial settings for all channels -------------------------------
 trackResults = repmat(trackResults, 1, settings.numberOfChannels);
@@ -178,6 +185,8 @@ for channelNr = 1:settings.numberOfChannels
 
         %C/No computation
         vsmCnt  = 0;
+        prmCnt  = 0;
+        momCnt  = 0;
         if (settings.CNo.enableVSM==1)
             CNo='Calculating...';
         else
@@ -351,6 +360,30 @@ for channelNr = 1:settings.numberOfChannels
                         trackResults(channelNr).Q_P(loopCnt-settings.CNo.VSMinterval+1:loopCnt),settings.CNo.accTime);
                     trackResults(channelNr).CNo.VSMValue(vsmCnt)=CNoValue;
                     trackResults(channelNr).CNo.VSMIndex(vsmCnt)=loopCnt;
+                    CNo=int2str(CNoValue);
+                end
+            end
+
+            if (settings.CNo.enablePRM==1)
+                if (rem(loopCnt,settings.CNo.PRM_K)==0)
+                    prmCnt=prmCnt+1;
+                    CNoValue=CNoPRM(trackResults(channelNr).I_P(loopCnt-settings.CNo.PRM_K+1:loopCnt),...
+                        trackResults(channelNr).Q_P(loopCnt-settings.CNo.PRM_K+1:loopCnt),...
+                        settings.CNo.accTime,settings.CNo.PRM_M);
+                    trackResults(channelNr).CNo.PRMValue(prmCnt)=CNoValue;
+                    trackResults(channelNr).CNo.PRMIndex(prmCnt)=loopCnt;
+                    CNo=int2str(CNoValue);
+                end
+            end
+
+            if (settings.CNo.enableMOM==1)
+                if (rem(loopCnt,settings.CNo.MOMinterval)==0)
+                    momCnt=momCnt+1;
+                    CNoValue=CNoMOM(trackResults(channelNr).I_P(loopCnt-settings.CNo.MOMinterval+1:loopCnt),...
+                        trackResults(channelNr).Q_P(loopCnt-settings.CNo.MOMinterval+1:loopCnt),...
+                        settings.CNo.accTime);
+                    trackResults(channelNr).CNo.MOMValue(momCnt)=CNoValue;
+                    trackResults(channelNr).CNo.MOMIndex(momCnt)=loopCnt;
                     CNo=int2str(CNoValue);
                 end
             end
