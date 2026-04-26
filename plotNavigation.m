@@ -96,7 +96,11 @@ if (~isempty(navSolutions))
     %--- Draw axes --------------------------------------------------------
     handles(1, 1) = subplot(4, 2, 1 : 4);
     handles(3, 1) = subplot(4, 2, [5, 7]);
-    handles(3, 2) = subplot(4, 2, [6, 8]);    
+    tmpAx = subplot(4, 2, [6, 8]);
+    skyPos = get(tmpAx, 'Position');
+    delete(tmpAx);
+    skyPanel = uipanel('Parent', figureNumber, 'Position', skyPos, ...
+                       'BorderType', 'none');    
  
 %% Plot all figures =======================================================
  
@@ -134,13 +138,23 @@ if (~isempty(navSolutions))
     zlabel(handles(3, 1), 'Upping (m)');
     
     %--- Satellite sky plot -----------------------------------------------
-    skyPlot(handles(3, 2), ...
-            navSolutions.channel.az, ...
-            navSolutions.channel.el, ...
-            navSolutions.channel.PRN(:, 1));
+    nRows = size(navSolutions.channel.PRN, 1);
+    prnTmp = navSolutions.channel.PRN(:, 1);
+    prnVec = zeros(nRows, 1);
+    n = min(nRows, length(prnTmp));
+    prnVec(1:n) = prnTmp(1:n);
+    satLabels = strings(nRows, 1);
+    for i = 1:nRows
+        if prnVec(i) > 0
+            satLabels(i) = "G" + string(prnVec(i));
+        end
+    end
+    sp = skyplot(skyPanel, navSolutions.channel.az(1:nRows,:)', ...
+                 navSolutions.channel.el(1:nRows,:)', satLabels, ...
+                 "MaskElevation", settings.elevationMask);
         
-    title (handles(3, 2), ['Sky plot (mean PDOP: ', ...
-                               num2str(mean(navSolutions.DOP(2,:))), ')']);  
+    title(sp, ['Sky plot (mean PDOP: ', ...
+                      num2str(mean(navSolutions.DOP(2,:))), ')']);
                            
 else
     disp('plotNavigation: No navigation data to plot.');
