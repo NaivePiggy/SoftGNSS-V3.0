@@ -28,7 +28,7 @@ function settings = initSettings()
 settings.msToProcess        = 36000;        %[ms]
 
 % Number of channels to be used for signal processing
-settings.numberOfChannels   = 8;
+settings.numberOfChannels   = 16;
 
 % Move the starting point of processing. Can be used to start the signal
 % processing at any point in the data record (e.g. for long records). fseek
@@ -44,13 +44,8 @@ settings.skipNumberOfBytes     = 0;
 % This is a "default" name of the data file (signal record) to be used in
 % the post-processing mode
 
-% settings.fileName           = ...
-%     'D:\forZhu\8_30_2010_15h_15min_48s\8_30_2010_15h_15min_48s_SDR.bin'
-%     %'C:\Users\gps\Desktop\SihaoZ\dynamic\9_13_2010_14h_53min_25s\9_13_2010_14h_53min_25s_SDR.bin';
-%     %'C:\Nordnav-Rx_v3-6-1\h22m49up.sim';
-% settings.fileName           =  'C:\gnss0.bin';
-settings.fileName = 'C:\Users\AltBOC\Documents\MATLAB\sdr\data\201404150757amUTCG\v2\gnsa14.bin';
-settings.fileName = 'C:\Users\AltBOC\Documents\MATLAB\gnsa14.bin';
+% settings.fileName = 'data\gnsa14.bin';
+settings.fileName = 'data\gnss0.bin';
     
     
 % Data type used to store one sample
@@ -78,7 +73,7 @@ settings.codeLength         = 1023;
 settings.skipAcquisition    = 0;
 % List of satellites to look for. Some satellites can be excluded to speed
 % up acquisition
-settings.acqSatelliteList   = [1:29 31 32];%[1:32];         %[PRN numbers]PRN32 was just launched (as of 2014 Apr 15) so it was not set active yet:accuracy indicated by decoded message:11
+settings.acqSatelliteList   = [1:32];         %[PRN numbers]PRN32 was just launched (as of 2014 Apr 15) so it was not set active yet:accuracy indicated by decoded message:11
 % Band around IF to search for satellite signal. Depends on max Doppler
 settings.acqSearchBand      = 14;           %[kHz]
 % Threshold for the signal presence decision rule
@@ -136,8 +131,7 @@ settings.startOffset        = 68.802;       %[ms] Initial sign. travel time
 % Accumulation interval in Tracking (in Sec)
 settings.CNo.accTime=0.001;
 % Show C/No during Tracking;1-on;0-off;
-% settings.CNo.enableVSM=1;
-settings.CNo.enableVSM=0;
+settings.CNo.enableVSM=1;
 % Enable/disable PRM C/No estimation; 1-on; 0-off;
 settings.CNo.enablePRM=0;
 % Enable/disable MOM C/No estimation; 1-on; 0-off;

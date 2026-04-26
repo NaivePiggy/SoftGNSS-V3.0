@@ -55,9 +55,6 @@ for channelNr = 1 : settings.numberOfChannels
                 channel(channelNr).acquiredFreq - settings.IF, ...
                 channel(channelNr).codePhase, ...
                 channel(channelNr).status);
-    else
-        fprintf('|      %2d | --- |  ------------ |   -----   |    ------   |   Off  |\n', ...
-                channelNr);
     end
 end
 

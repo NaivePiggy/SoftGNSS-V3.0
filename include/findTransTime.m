@@ -60,8 +60,9 @@ transmitTime=zeros(1,length(readyChnList));
 %     transmitTime(channelNr)=interp1(x2,y2,index_c);
 %     i = channelNr
 % end
-for channelNr = 1: length(readyChnList)
-%     sampleNum;
+for i = 1:length(readyChnList)
+    channelNr = readyChnList(i);
+
     % Find the index of the sampleNum in the tracking results
     index_a=max(find((trackResults(channelNr).absoluteSample) <= sampleNum));
     index_b=min(find((trackResults(channelNr).absoluteSample) >= sampleNum));
@@ -71,5 +72,5 @@ for channelNr = 1: length(readyChnList)
     x2=[index_a,index_b];
     y2=svTimeTable(channelNr).time(x2);
     % Find the transmitting time based on the index calculated
-    transmitTime(channelNr)=interp1(x2,y2,index_c);
+    transmitTime(i)=interp1(x2,y2,index_c);
 end

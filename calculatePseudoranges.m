@@ -52,10 +52,11 @@ function pseudoranges = calculatePseudoranges(...
 travelTime = inf(1, settings.numberOfChannels);
     
 %--- For all channels in the list ...
-for channelNr = channelList
+for i = 1:length(channelList)
+    channelNr = channelList(i);
 
     %--- Compute the travel times -----------------------------------------
-    travelTime(channelNr) = rxTime-transmitTime(channelNr);
+    travelTime(channelNr) = rxTime-transmitTime(i);
 end
 
 %--- Convert travel time to a distance ------------------------------------

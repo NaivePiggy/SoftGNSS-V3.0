@@ -44,6 +44,9 @@ function plotTracking(channelList, trackResults, settings)
 % Protection - if the list contains incorrect channel numbers
 channelList = intersect(channelList, 1:settings.numberOfChannels);
 
+%--- Remove channels that are not tracking (no PRN assigned) --------------
+channelList = channelList([trackResults(channelList).status] ~= '-');
+
 %=== For all listed channels ==============================================
 for channelNr = channelList
 

@@ -80,8 +80,18 @@ for channelNr = activeChnList
     %=== Convert tracking output to navigation bits =======================
     
     %--- Copy 5 sub-frames long record from tracking output ---------------
-    navBitsSamples = trackResults(channelNr).I_P(subFrameStart(channelNr) - 40 : ...
-        subFrameStart(channelNr) + (1500 * 20) -1)';
+    dataLen = length(trackResults(channelNr).I_P);
+    startIdx = subFrameStart(channelNr) - 40;
+    endIdx   = subFrameStart(channelNr) + (1500 * 20) - 1;
+
+    if startIdx < 1 || endIdx > dataLen
+        disp(['Not enough data in channel ', num2str(channelNr), ...
+              ' to decode 5 subframes. Skipping!']);
+        activeChnList = setdiff(activeChnList, channelNr);
+        continue
+    end
+
+    navBitsSamples = trackResults(channelNr).I_P(startIdx : endIdx)';
     
     %--- Group every 20 vales of bits into columns ------------------------
     navBitsSamples = reshape(navBitsSamples, ...
@@ -223,8 +233,8 @@ for currMeasNr =1:fix((min(lastSample) - ...
     
 %     [satPositions, satClkCorr] = satpos(transmitTime, ...
 %         [trackResults(activeChnList).PRN],eph);
-        [satPositions, satClkCorr] = satpos(transmitTime(find(transmitTime>0)), ...
-        [trackResults(activeChnList).PRN],eph);
+        [satPositions, satClkCorr] = satpos(transmitTime, ...
+            [trackResults(activeChnList).PRN], eph);
     
     %% Find receiver position =================================================
     
