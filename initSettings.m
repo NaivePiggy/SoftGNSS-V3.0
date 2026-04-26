@@ -145,6 +145,19 @@ settings.CNo.PRM_K=200;
 settings.CNo.PRM_M=20;
 % Accumulation interval for computing MOM C/No (in ms)
 settings.CNo.MOMinterval=200;
+%% Bit Synchronization Settings ==========================================
+% Enable histogram-based data bit synchronization during tracking.
+% When enabled, PRM C/No uses bit-stripping for improved accuracy.
+settings.CNo.enableBitSync      = 1;    % 1 = on, 0 = off
+% Minimum 1ms samples before first bit sync (>= 1200 for 60 complete bits)
+settings.CNo.bitSyncMinData    = 1200;  % [ms]
+% Number of 1ms samples per navigation data bit (20 for GPS L1 C/A)
+settings.CNo.bitSyncBlockSize  = 20;
+% Minimum complete 20ms blocks required at an offset to consider it
+settings.CNo.bitSyncMinBlocks  = 10;
+% Re-run interval; 0 = run only once (recommended, boundary is fixed)
+settings.CNo.bitSyncReRun      = 0;     % [ms]
+
 %Enable vector tracking when 1, otherwise scalar tracking.
 % settings.VLLen = 1;
 settings.VLLen = 0;

@@ -98,6 +98,8 @@ trackResults.CNo.MOMValue = ...
 trackResults.CNo.MOMIndex = ...
     zeros(1, floor(settings.msToProcess/settings.CNo.MOMinterval));
 
+trackResults.bitBoundary       = -1;  % -1 = unknown, 0..19 = valid boundary
+
 %--- Copy initial settings for all channels -------------------------------
 trackResults = repmat(trackResults, 1, settings.numberOfChannels);
 
@@ -190,6 +192,10 @@ for channelNr = 1:settings.numberOfChannels
         cnoVsmStr = '';
         cnoPrmStr = '';
         cnoMomStr = '';
+
+        % Bit synchronization state (per-channel)
+        bitBoundary = -1;   % -1 = not yet found, 0..19 = valid
+        bitSyncDone = false;
 
         %=== Process the number of specified code periods =================
         for loopCnt =  1:codePeriods
@@ -362,6 +368,21 @@ for channelNr = 1:settings.numberOfChannels
             trackResults(channelNr).Q_P(loopCnt) = Q_P;
             trackResults(channelNr).Q_L(loopCnt) = Q_L;
 
+            %% Bit synchronization (histogram method) =========================
+            if settings.CNo.enableBitSync && ~bitSyncDone && ...
+               loopCnt >= settings.CNo.bitSyncMinData
+                [bitBoundary, bitConfidence] = histBitSync(...
+                    trackResults(channelNr).I_P(1:loopCnt), ...
+                    settings.CNo.bitSyncBlockSize, ...
+                    settings.CNo.bitSyncMinBlocks);
+                bitSyncDone = true;
+                if bitConfidence > 1.5
+                    trackResults(channelNr).bitBoundary = bitBoundary;
+                end
+                % If confidence is too low, bitBoundary stays -1
+                % and PRM will not use bit stripping for this channel.
+            end
+
 
 
             if (settings.CNo.enableVSM==1)
@@ -378,12 +399,43 @@ for channelNr = 1:settings.numberOfChannels
             if (settings.CNo.enablePRM==1)
                 if (rem(loopCnt,settings.CNo.PRM_K)==0)
                     prmCnt=prmCnt+1;
-                    CNoValue=CNoPRM(trackResults(channelNr).I_P(loopCnt-settings.CNo.PRM_K+1:loopCnt),...
-                        trackResults(channelNr).Q_P(loopCnt-settings.CNo.PRM_K+1:loopCnt),...
-                        settings.CNo.accTime,settings.CNo.PRM_M);
+                    if bitSyncDone && bitBoundary >= 0
+                        % Align PRM window to bit boundaries so each
+                        % M=20 NBP group equals exactly one data bit
+                        bs = settings.CNo.bitSyncBlockSize;
+                        K = settings.CNo.PRM_K;
+                        % Largest k such that firstBit + K - 1 <= loopCnt
+                        k = floor((loopCnt - bitBoundary - K) / bs);
+                        firstBit = bitBoundary + 1 + k * bs;
+                        if firstBit >= 1 && k >= 0
+                            lastBit = firstBit + K - 1;
+                            I_win = trackResults(channelNr).I_P(firstBit:lastBit);
+                            Q_win = trackResults(channelNr).Q_P(firstBit:lastBit);
+                            % Strip each complete data bit in the window
+                            I_clean = zeros(1, K);
+                            Q_clean = zeros(1, K);
+                            for b = 0:(K / bs - 1)
+                                idx = b * bs + (1:bs);
+                                bitSign = 1;
+                                if sum(I_win(idx)) < 0
+                                    bitSign = -1;
+                                end
+                                I_clean(idx) = I_win(idx) * bitSign;
+                                Q_clean(idx) = Q_win(idx) * bitSign;
+                            end
+                            CNoValue = CNoPRM(I_clean, Q_clean, ...
+                                settings.CNo.accTime, settings.CNo.PRM_M);
+                        else
+                            CNoValue = NaN;
+                        end
+                        cnoPrmStr = sprintf('%.1f', CNoValue);
+                    else
+                        CNoValue = NaN;
+                        cnoPrmStr = 'NaN';
+                    end
+
                     trackResults(channelNr).CNo.PRMValue(prmCnt)=CNoValue;
                     trackResults(channelNr).CNo.PRMIndex(prmCnt)=loopCnt;
-                    cnoPrmStr = sprintf('%.1f', CNoValue);
                 end
             end
 

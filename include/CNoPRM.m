@@ -19,11 +19,10 @@ function [CNo] = CNoPRM(I, Q, T, M, dataBits)
 %       Q           - Prompt Quadrature Phase values of the signal from Tracking
 %       T           - Accumulation interval in Tracking (in sec)
 %       M           - Narrowband smoothing factor (K must be integral multiple of M)
-%       dataBits    - (Optional) Data bit signs for I, same length as I.
-%                     Values must be +1 or -1. When provided, I is multiplied
-%                     by dataBits before the narrowband coherent integration,
-%                     stripping the navigation data modulation so that the
-%                     signal adds constructively across bit boundaries.
+%       dataBits    - (Optional) Data bit signs, same length as I and Q.
+%                     Values must be +1 or -1. When provided, both I and Q
+%                     are multiplied by dataBits before narrowband coherent
+%                     integration, stripping the navigation data modulation.
 %   Outputs:
 %       CNo         - Estimated C/No for the given values of I and Q (dB-Hz)
 %
@@ -58,11 +57,13 @@ K = length(I);
 %   E[NBP/WBP] = (M * SNR + 1) / (SNR + 1)
 % where SNR = Pav / (2*sigma^2)
 
-%% Strip data bits from I if provided ======================================
+%% Strip data bits if provided (both I and Q) ============================
 if nargin >= 5 && ~isempty(dataBits)
     I_nbp = I .* dataBits;
+    Q_nbp = Q .* dataBits;
 else
     I_nbp = I;
+    Q_nbp = Q;
 end
 
 %% Compute wideband power ====================================================
@@ -72,7 +73,7 @@ WBP = sum(I.^2 + Q.^2);
 numGroups = K / M;
 
 I_groups = sum(reshape(I_nbp, M, numGroups), 1);
-Q_groups = sum(reshape(Q, M, numGroups), 1);
+Q_groups = sum(reshape(Q_nbp, M, numGroups), 1);
 NBP = sum(I_groups.^2 + Q_groups.^2);
 
 %% Estimate C/No from the power ratio ========================================

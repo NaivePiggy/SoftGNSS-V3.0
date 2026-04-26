@@ -106,6 +106,8 @@ trackResults.CNo.MOMValue = ...
 trackResults.CNo.MOMIndex = ...
     zeros(1, floor(tracklength/settings.CNo.MOMinterval));
 
+trackResults.bitBoundary       = -1;  % -1 = unknown, 0..19 = valid boundary
+
 %--- Copy initial settings for all channels -------------------------------
 trackResults = repmat(trackResults, 1, settings.numberOfChannels);
 
@@ -215,6 +217,10 @@ for channelNr = 1:NumChan%settings.numberOfChannels
         else
             CNo='Disabled';
         end
+        % Bit synchronization state (per-channel)
+        bitBoundary(1,channelNr) = -1;
+        bitSyncDone(1,channelNr) = false;
+
         % Get a vector with the C/A code sampled 1x/chip
         caCode0 = generateCAcode(trackRes(1,activeChnList(channelNr)).PRN);
         % Then make it possible to do early and late versions
@@ -394,6 +400,19 @@ for sectcnt=1:sectno
                 trackResults(activeChnList(m)).Q_P(loopCnt) = Q_P;
                 trackResults(activeChnList(m)).Q_L(loopCnt) = Q_L;
 
+                %% Bit synchronization (histogram method) =====================
+                if settings.CNo.enableBitSync && ~bitSyncDone(1,m) && ...
+                   loopCnt >= settings.CNo.bitSyncMinData
+                    [bitBoundary(1,m), bitConfidence] = histBitSync(...
+                        trackResults(activeChnList(m)).I_P(1:loopCnt), ...
+                        settings.CNo.bitSyncBlockSize, ...
+                        settings.CNo.bitSyncMinBlocks);
+                    bitSyncDone(1,m) = true;
+                    if bitConfidence > 1.5
+                        trackResults(activeChnList(m)).bitBoundary = bitBoundary(1,m);
+                    end
+                end
+
                 if (settings.CNo.enableVSM==1)
                     if (rem(loopCnt,settings.CNo.VSMinterval)==0)
                         CNoValue=CNoVSM(trackResults(activeChnList(m)).I_P(loopCnt-settings.CNo.VSMinterval+1:loopCnt),...
@@ -406,9 +425,35 @@ for sectcnt=1:sectno
 
                 if (settings.CNo.enablePRM==1)
                     if (rem(loopCnt,settings.CNo.PRM_K)==0)
-                        CNoValue=CNoPRM(trackResults(activeChnList(m)).I_P(loopCnt-settings.CNo.PRM_K+1:loopCnt),...
-                            trackResults(activeChnList(m)).Q_P(loopCnt-settings.CNo.PRM_K+1:loopCnt),...
-                            settings.CNo.accTime,settings.CNo.PRM_M);
+                        if bitSyncDone(1,m) && bitBoundary(1,m) >= 0
+                            bs = settings.CNo.bitSyncBlockSize;
+                            K = settings.CNo.PRM_K;
+                            k = floor((loopCnt - bitBoundary(1,m) - K) / bs);
+                            firstBit = bitBoundary(1,m) + 1 + k * bs;
+                            if firstBit >= 1 && k >= 0
+                                lastBit = firstBit + K - 1;
+                                I_win = trackResults(activeChnList(m)).I_P(firstBit:lastBit);
+                                Q_win = trackResults(activeChnList(m)).Q_P(firstBit:lastBit);
+                                I_clean = zeros(1, K);
+                                Q_clean = zeros(1, K);
+                                for b = 0:(K / bs - 1)
+                                    idx = b * bs + (1:bs);
+                                    bitSign = 1;
+                                    if sum(I_win(idx)) < 0
+                                        bitSign = -1;
+                                    end
+                                    I_clean(idx) = I_win(idx) * bitSign;
+                                    Q_clean(idx) = Q_win(idx) * bitSign;
+                                end
+                                CNoValue = CNoPRM(I_clean, Q_clean, ...
+                                    settings.CNo.accTime, settings.CNo.PRM_M);
+                            else
+                                CNoValue = NaN;
+                            end
+                        else
+                            CNoValue = NaN;
+                        end
+
                         trackResults(activeChnList(m)).CNo.PRMValue(loopCnt/settings.CNo.PRM_K)=CNoValue;
                         trackResults(activeChnList(m)).CNo.PRMIndex(loopCnt/settings.CNo.PRM_K)=loopCnt;
                     end
