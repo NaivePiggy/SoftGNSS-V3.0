@@ -81,8 +81,6 @@ trackResults.dllDiscr       = inf(1, settings.msToProcess);
 trackResults.dllDiscrFilt   = inf(1, settings.msToProcess);
 trackResults.pllDiscr       = inf(1, settings.msToProcess);
 trackResults.pllDiscrFilt   = inf(1, settings.msToProcess);
-trackResults.fllDiscr       = inf(1, settings.msToProcess);
-trackResults.fllDiscrFilt   = inf(1, settings.msToProcess);
 
 %C/No
 trackResults.CNo.VSMValue = ...
@@ -127,12 +125,6 @@ PDIcarr = 0.001;
 [tau1carr, tau2carr] = calcLoopCoef(settings.pllNoiseBandwidth, ...
     settings.pllDampingRatio, ...
     0.25);
-
-%--- FLL variables --------------------------------------------------------
-% Calculate FLL filter coefficient values (k=1.0 for frequency discriminator)
-[tau1fll, tau2fll] = calcLoopCoef(settings.fllNoiseBandwidth, ...
-    settings.fllDampingRatio, ...
-    1.0);
 hwb = waitbar(0,'Tracking...','Visible','off');
 
 %Adjust the size of the waitbar to insert text
@@ -190,14 +182,6 @@ for channelNr = 1:settings.numberOfChannels
         %carrier/Costas loop parameters
         oldCarrNco   = 0.0;
         oldCarrError = 0.0;
-
-        %FLL (Frequency Lock Loop) parameters
-        oldFllNco   = 0.0;
-        oldFllDiscr = 0.0;
-        oldIP       = 0.0;   % previous I_P for cross/dot discriminator
-        oldQP       = 0.0;   % previous Q_P for cross/dot discriminator
-        fllPhase    = 1;     % 1=FLL pull-in, 2=FLL-assisted PLL, 3=pure PLL
-        currentCNo  = 0;     % latest C/N0 estimate value
 
         %C/No computation
         vsmCnt  = 0;
@@ -319,53 +303,19 @@ for channelNr = 1:settings.numberOfChannels
             I_L = sum(lateCode   .* iBasebandSignal);
             Q_L = sum(lateCode   .* qBasebandSignal);
 
-            %% Find PLL error (phase discriminator) ---------------------------
+            %% Find PLL error and update carrier NCO ----------------------------------
+
+            % Implement carrier loop discriminator (phase detector)
             carrError = atan(Q_P / I_P) / (2.0 * pi);
 
-            %% Find FLL error (cross/dot frequency discriminator) --------------
-            if (loopCnt == 1)
-                fllDiscr = 0.0;
-            else
-                dot   = oldIP * I_P + oldQP * Q_P;
-                cross = oldIP * Q_P - I_P * oldQP;
-                fllDiscr = atan2(cross, dot) / (2.0 * pi * PDIcarr);
-            end
-            oldIP = I_P;
-            oldQP = Q_P;
+            % Implement carrier loop filter and generate NCO command
+            carrNco = oldCarrNco + (tau2carr/tau1carr) * ...
+                (carrError - oldCarrError) + carrError * (PDIcarr/tau1carr);
+            oldCarrNco   = carrNco;
+            oldCarrError = carrError;
 
-            %% FLL loop filter -------------------------------------------------
-            fllNco = oldFllNco + (tau2fll/tau1fll) * ...
-                (fllDiscr - oldFllDiscr) + fllDiscr * (PDIcarr/tau1fll);
-            oldFllNco   = fllNco;
-            oldFllDiscr = fllDiscr;
-
-            %% C/No-adaptive phase transition logic ----------------------------
-            if (loopCnt == settings.fllPullInMs + 1)
-                fllPhase = 2;   % Phase 1 ended, enter FLL-assisted PLL
-            end
-
-            %% PLL loop filter (bypassed in Phase 1 to prevent windup) ---------
-            if (fllPhase == 1)
-                carrNco = 0.0;
-            else
-                if (loopCnt == settings.fllPullInMs + 1)
-                    oldCarrNco   = 0.0;    % Reset PLL states at handoff
-                    oldCarrError = 0.0;
-                end
-                carrNco = oldCarrNco + (tau2carr/tau1carr) * ...
-                    (carrError - oldCarrError) + carrError * (PDIcarr/tau1carr);
-                oldCarrNco   = carrNco;
-                oldCarrError = carrError;
-            end
-
-            %% Three-phase carrier NCO -----------------------------------------
-            if (fllPhase == 1)
-                carrFreq = carrFreqBasis + fllNco;
-            elseif (fllPhase == 2)
-                carrFreq = carrFreqBasis + fllNco + carrNco;
-            else
-                carrFreq = carrFreqBasis + carrNco;
-            end
+            % Modify carrier freq based on NCO command
+            carrFreq = carrFreqBasis + carrNco;
 
             trackResults(channelNr).carrFreq(loopCnt) = carrFreq;
             trackResults(channelNr).remCarrPhase(loopCnt) = remCarrPhase;
@@ -393,8 +343,6 @@ for channelNr = 1:settings.numberOfChannels
             trackResults(channelNr).dllDiscrFilt(loopCnt)   = codeNco;
             trackResults(channelNr).pllDiscr(loopCnt)       = carrError;
             trackResults(channelNr).pllDiscrFilt(loopCnt)   = carrNco;
-            trackResults(channelNr).fllDiscr(loopCnt)       = fllDiscr;
-            trackResults(channelNr).fllDiscrFilt(loopCnt)   = fllNco;
 
             trackResults(channelNr).I_E(loopCnt) = I_E;
             trackResults(channelNr).I_P(loopCnt) = I_P;
@@ -413,12 +361,6 @@ for channelNr = 1:settings.numberOfChannels
                     trackResults(channelNr).CNo.VSMValue(vsmCnt)=CNoValue;
                     trackResults(channelNr).CNo.VSMIndex(vsmCnt)=loopCnt;
                     CNo=int2str(CNoValue);
-                    currentCNo = CNoValue;
-                    if (currentCNo >= settings.fllCNoThreshold)
-                        fllPhase = 3;
-                    else
-                        fllPhase = 2;
-                    end
                 end
             end
 
@@ -431,12 +373,6 @@ for channelNr = 1:settings.numberOfChannels
                     trackResults(channelNr).CNo.PRMValue(prmCnt)=CNoValue;
                     trackResults(channelNr).CNo.PRMIndex(prmCnt)=loopCnt;
                     CNo=int2str(CNoValue);
-                    currentCNo = CNoValue;
-                    if (currentCNo >= settings.fllCNoThreshold)
-                        fllPhase = 3;
-                    else
-                        fllPhase = 2;
-                    end
                 end
             end
 
@@ -449,12 +385,6 @@ for channelNr = 1:settings.numberOfChannels
                     trackResults(channelNr).CNo.MOMValue(momCnt)=CNoValue;
                     trackResults(channelNr).CNo.MOMIndex(momCnt)=loopCnt;
                     CNo=int2str(CNoValue);
-                    currentCNo = CNoValue;
-                    if (currentCNo >= settings.fllCNoThreshold)
-                        fllPhase = 3;
-                    else
-                        fllPhase = 2;
-                    end
                 end
             end
 

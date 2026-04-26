@@ -95,8 +95,7 @@ settings.pllDampingRatio         = 0.7;
 settings.pllNoiseBandwidth       = 6.5;      %[Hz]
 settings.fllDampingRatio         = 0.7;
 settings.fllNoiseBandwidth       = 10;      %[Hz]
-settings.fllPullInMs             = 300;      %[ms] FLL-only pull-in phase duration
-settings.fllCNoThreshold         = 28;       %[dB-Hz] C/N0 threshold for pure PLL
+
 
 
 %% Navigation solution settings ===========================================
