@@ -65,15 +65,17 @@ for channelNr = channelList
 
 %% Draw axes ==============================================================
         % Row 1
-        handles(1, 1) = subplot(3, 3, 1);
-        handles(1, 2) = subplot(3, 3, [2 3]);
+        handles(1, 1) = subplot(4, 3, 1);
+        handles(1, 2) = subplot(4, 3, [2 3]);
         % Row 2
-        handles(2, 1) = subplot(3, 3, 4);
-        handles(2, 2) = subplot(3, 3, [5 6]);
+        handles(2, 1) = subplot(4, 3, 4);
+        handles(2, 2) = subplot(4, 3, [5 6]);
         % Row 3
-        handles(3, 1) = subplot(3, 3, 7);
-        handles(3, 2) = subplot(3, 3, 8);
-        handles(3, 3) = subplot(3, 3, 9);
+        handles(3, 1) = subplot(4, 3, 7);
+        handles(3, 2) = subplot(4, 3, 8);
+        handles(3, 3) = subplot(4, 3, 9);
+        % Row 4 - C/N0
+        handles(4, 1) = subplot(4, 3, [10 12]);
 
 %% Plot all figures =======================================================
 
@@ -153,12 +155,44 @@ for channelNr = channelList
 
         %----- DLL discriminator filtered----------------------------------
         plot  (handles(3, 3), timeAxisInSeconds, ...
-                              trackResults(channelNr).dllDiscrFilt, 'b');      
+                              trackResults(channelNr).dllDiscrFilt, 'b');
 
         grid  (handles(3, 3));
         axis  (handles(3, 3), 'tight');
         xlabel(handles(3, 3), 'Time (s)');
         ylabel(handles(3, 3), 'Amplitude');
         title (handles(3, 3), 'Filtered DLL discriminator');
+
+        %----- C/N0 ------------------------------------------------------
+        hold(handles(4, 1), 'on');
+        if (settings.CNo.enableVSM == 1)
+            vsmTime = trackResults(channelNr).CNo.VSMIndex(1:find(trackResults(channelNr).CNo.VSMValue, 1, 'last')) / 1000;
+            vsmData = trackResults(channelNr).CNo.VSMValue(1:length(vsmTime));
+            plot(handles(4, 1), vsmTime, vsmData, 'b.-', 'MarkerSize', 4);
+        end
+        if (settings.CNo.enablePRM == 1)
+            prmTime = trackResults(channelNr).CNo.PRMIndex(1:find(trackResults(channelNr).CNo.PRMValue, 1, 'last')) / 1000;
+            prmData = trackResults(channelNr).CNo.PRMValue(1:length(prmTime));
+            plot(handles(4, 1), prmTime, prmData, 'rs-', 'MarkerSize', 4);
+        end
+        if (settings.CNo.enableMOM == 1)
+            momTime = trackResults(channelNr).CNo.MOMIndex(1:find(trackResults(channelNr).CNo.MOMValue, 1, 'last')) / 1000;
+            momData = trackResults(channelNr).CNo.MOMValue(1:length(momTime));
+            plot(handles(4, 1), momTime, momData, 'g^-', 'MarkerSize', 4);
+        end
+        hold(handles(4, 1), 'off');
+
+        grid(handles(4, 1));
+        xlabel(handles(4, 1), 'Time (s)');
+        ylabel(handles(4, 1), 'C/N_0 (dB-Hz)');
+        title(handles(4, 1), 'Estimated C/N_0');
+
+        cnoLegend = {};
+        if (settings.CNo.enableVSM == 1), cnoLegend{end+1} = 'VSM'; end
+        if (settings.CNo.enablePRM == 1), cnoLegend{end+1} = 'PRM'; end
+        if (settings.CNo.enableMOM == 1), cnoLegend{end+1} = 'MOM'; end
+        if ~isempty(cnoLegend)
+            legend(handles(4, 1), cnoLegend, 'Location', 'best');
+        end
 
 end % for channelNr = channelList

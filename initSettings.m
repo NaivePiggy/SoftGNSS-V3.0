@@ -132,9 +132,9 @@ settings.CNo.accTime=0.001;
 % Show C/No during Tracking;1-on;0-off;
 settings.CNo.enableVSM=1;
 % Enable/disable PRM C/No estimation; 1-on; 0-off;
-settings.CNo.enablePRM=0;
+settings.CNo.enablePRM=1;
 % Enable/disable MOM C/No estimation; 1-on; 0-off;
-settings.CNo.enableMOM=0;
+settings.CNo.enableMOM=1;
 % Accumulation interval for computing VSM C/No (in ms)
 settings.CNo.VSMinterval=400;
 % Accumulation interval for computing PRM C/No (in ms)
@@ -145,9 +145,6 @@ settings.CNo.PRM_K=200;
 settings.CNo.PRM_M=20;
 % Accumulation interval for computing MOM C/No (in ms)
 settings.CNo.MOMinterval=200;
-% Enable/disable the C/No plots for all the channels
-% 0 - Off ; 1 - On;
-settings.CNo.Plot = 1;
 %Enable vector tracking when 1, otherwise scalar tracking.
 % settings.VLLen = 1;
 settings.VLLen = 0;
