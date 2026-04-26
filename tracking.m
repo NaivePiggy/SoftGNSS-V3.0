@@ -187,11 +187,9 @@ for channelNr = 1:settings.numberOfChannels
         vsmCnt  = 0;
         prmCnt  = 0;
         momCnt  = 0;
-        if (settings.CNo.enableVSM==1)
-            CNo='Calculating...';
-        else
-            CNo='Disabled';
-        end
+        cnoVsmStr = '';
+        cnoPrmStr = '';
+        cnoMomStr = '';
 
         %=== Process the number of specified code periods =================
         for loopCnt =  1:codePeriods
@@ -202,12 +200,25 @@ for channelNr = 1:settings.numberOfChannels
             % all the time with GUI task.
 
             Ln=sprintf('\n');
+            cnoDisp = '';
+            if settings.CNo.enableVSM
+                cnoDisp = [cnoDisp, 'VSM:', cnoVsmStr, ' '];
+            end
+            if settings.CNo.enablePRM
+                cnoDisp = [cnoDisp, 'PRM:', cnoPrmStr, ' '];
+            end
+            if settings.CNo.enableMOM
+                cnoDisp = [cnoDisp, 'MOM:', cnoMomStr];
+            end
+            if isempty(cnoDisp)
+                cnoDisp = 'Disabled';
+            end
             trackingStatus=['Tracking: Ch ', int2str(channelNr), ...
                 ' of ', int2str(settings.numberOfChannels),Ln ...
                 'PRN: ', int2str(channel(channelNr).PRN),Ln ...
                 'Completed ',int2str(loopCnt), ...
                 ' of ', int2str(codePeriods), ' msec',Ln...
-                'C/No: ',CNo,' (dB-Hz)'];
+                'C/No (dB-Hz): ', cnoDisp];
 
 
 
@@ -360,7 +371,7 @@ for channelNr = 1:settings.numberOfChannels
                         trackResults(channelNr).Q_P(loopCnt-settings.CNo.VSMinterval+1:loopCnt),settings.CNo.accTime);
                     trackResults(channelNr).CNo.VSMValue(vsmCnt)=CNoValue;
                     trackResults(channelNr).CNo.VSMIndex(vsmCnt)=loopCnt;
-                    CNo=int2str(CNoValue);
+                    cnoVsmStr = sprintf('%.1f', CNoValue);
                 end
             end
 
@@ -372,7 +383,7 @@ for channelNr = 1:settings.numberOfChannels
                         settings.CNo.accTime,settings.CNo.PRM_M);
                     trackResults(channelNr).CNo.PRMValue(prmCnt)=CNoValue;
                     trackResults(channelNr).CNo.PRMIndex(prmCnt)=loopCnt;
-                    CNo=int2str(CNoValue);
+                    cnoPrmStr = sprintf('%.1f', CNoValue);
                 end
             end
 
@@ -384,7 +395,7 @@ for channelNr = 1:settings.numberOfChannels
                         settings.CNo.accTime);
                     trackResults(channelNr).CNo.MOMValue(momCnt)=CNoValue;
                     trackResults(channelNr).CNo.MOMIndex(momCnt)=loopCnt;
-                    CNo=int2str(CNoValue);
+                    cnoMomStr = sprintf('%.1f', CNoValue);
                 end
             end
 
