@@ -152,7 +152,7 @@ if (fid > 0)
     
     if ~settings.VLLen
         disp('   Calculating navigation solutions...');
-        [navSolutions, eph, svTimeTable,activeChnList] = postNavigation(trackResults, settings);
+        [navSolutions, eph, svTimeTable, activeChnList, trackResults] = postNavigation(trackResults, settings);
         save('navSolutions','navSolutions','eph','svTimeTable','activeChnList')
         load 'navSolutions'
     else

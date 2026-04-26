@@ -6,12 +6,12 @@
 % text: "A Software-Defined GPS and Galileo Receiver: A Single-Frequency Approach"
 % by Borre, Akos, et.al.
 %-----------------------------------------------------------------------------------
-function [navSolutions, eph,svTimeTable,activeChnList] = postNavigation(trackResults, settings)
+function [navSolutions, eph, svTimeTable, activeChnList, trackResults] = postNavigation(trackResults, settings)
 %Function calculates navigation solutions for the receiver (pseudoranges,
 %positions). At the end it converts coordinates from the WGS84 system to
 %the UTM, geocentric or any additional coordinate system.
 %
-%[navSolutions, eph] = postNavigation(trackResults, settings)
+%[navSolutions, eph, svTimeTable, activeChnList, trackResults] = postNavigation(trackResults, settings)
 %
 %   Inputs:
 %       trackResults    - results from the tracking function (structure
@@ -22,6 +22,10 @@ function [navSolutions, eph,svTimeTable,activeChnList] = postNavigation(trackRes
 %                       clock error, receiver coordinates in several
 %                       coordinate systems (at least ECEF and UTM).
 %       eph             - received ephemerides of all SV (structure array).
+%       svTimeTable     - transmitting time table for each satellite.
+%       activeChnList   - list of channels with valid navigation data.
+%       trackResults    - tracking results with PRM C/N₀ corrected using
+%                       data bit stripping (if enablePRM is set).
 
 %--------------------------------------------------------------------------
 %                           SoftGNSS v3.0
@@ -67,6 +71,7 @@ if (settings.msToProcess < 36000) || (sum([trackResults.status] ~= '-') < 4)
     eph          = [];
     svTimeTable  = [];
     activeChnList = [];
+    trackResults = [];
     return
 end
 
@@ -104,7 +109,57 @@ for channelNr = activeChnList
     % The expression (navBits > 0) returns an array with elements set to 1
     % if the condition is met and set to 0 if it is not met.
     navBits = (navBits > 0);
-    
+
+    %--- Recompute PRM C/No with data bit stripping (full range) =========
+    if settings.CNo.enablePRM
+        totalLen = length(trackResults(channelNr).I_P);
+        I_full = trackResults(channelNr).I_P;
+        Q_full = trackResults(channelNr).Q_P;
+        ref = subFrameStart(channelNr);
+
+        % Data bit boundaries are at ref + k*20. Decode all complete
+        % 20-sample blocks that fit within [1, totalLen].
+        kFirst = ceil((1 - ref) / 20);
+        kLast  = floor((totalLen - 19 - ref) / 20);
+        numBits = kLast - kFirst + 1;
+
+        if numBits > 0
+            prmBits = zeros(1, numBits);
+            firstSample = ref + kFirst * 20;
+            for k = 0:(numBits - 1)
+                s = firstSample + k * 20;
+                prmBits(k + 1) = (sum(I_full(s:s + 19)) > 0);
+            end
+
+            signBits = 2 * double(prmBits) - 1;
+            % Expand to 1ms, row vector matching I_full orientation
+            signBits1ms = reshape(repmat(signBits, 20, 1), 1, []);
+
+            % Pad beginning with neutral sign for any partial initial bit
+            if firstSample > 1
+                signBits1ms = [ones(1, firstSample - 1), signBits1ms];
+            end
+
+            % Correct PRM for every window fully within the covered range
+            K = settings.CNo.PRM_K;
+            M = settings.CNo.PRM_M;
+            covLen = min(totalLen, length(signBits1ms));
+            lastWinEnd = floor(covLen / K) * K;
+
+            for endSample = K:K:lastWinEnd
+                ws = endSample - K + 1;
+                I_win = I_full(ws:endSample);
+                Q_win = Q_full(ws:endSample);
+                bits_win = signBits1ms(ws:endSample);
+
+                CNoVal = CNoPRM(I_win, Q_win, settings.CNo.accTime, ...
+                                M, bits_win);
+
+                trackResults(channelNr).CNo.PRMValue(endSample / K) = CNoVal;
+            end
+        end
+    end
+
     %--- Convert from decimal to binary -----------------------------------
     % The function ephemeris expects input in binary form. In Matlab it is
     % a string array containing only "0" and "1" characters.
@@ -141,6 +196,7 @@ if (isempty(activeChnList) || (size(activeChnList, 2) < 4))
     eph          = [];
     svTimeTable  = [];
     activeChnList = [];
+    trackResults = [];
     return
 end
 

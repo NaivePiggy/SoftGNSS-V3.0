@@ -6,18 +6,24 @@
 % text: "A Software-Defined GPS and Galileo Receiver: A Single-Frequency Approach"
 % by Borre, Akos, et.al.
 %-----------------------------------------------------------------------------------
-function [CNo] = CNoPRM(I, Q, T, M)
-%function [CNo] = CNoPRM(I, Q, T, M)
+function [CNo] = CNoPRM(I, Q, T, M, dataBits)
+%function [CNo] = CNoPRM(I, Q, T, M, dataBits)
 %Calculate CNo using the Power Ratio Method (PRM).
 %Compares wideband power to narrowband power to estimate SNR.
 %
 %[CNo] = CNoPRM(I, Q, T, M)
+%[CNo] = CNoPRM(I, Q, T, M, dataBits)
 %
 %   Inputs:
 %       I           - Prompt In Phase values of the signal from Tracking
 %       Q           - Prompt Quadrature Phase values of the signal from Tracking
 %       T           - Accumulation interval in Tracking (in sec)
 %       M           - Narrowband smoothing factor (K must be integral multiple of M)
+%       dataBits    - (Optional) Data bit signs for I, same length as I.
+%                     Values must be +1 or -1. When provided, I is multiplied
+%                     by dataBits before the narrowband coherent integration,
+%                     stripping the navigation data modulation so that the
+%                     signal adds constructively across bit boundaries.
 %   Outputs:
 %       CNo         - Estimated C/No for the given values of I and Q (dB-Hz)
 %
@@ -49,8 +55,15 @@ K = length(I);
 
 %% Compute narrowband power first, then the ratio ===========================
 % The theoretical expectation for the ratio NBP/WBP is:
-%   E[NBP/WBP] = (M + SNR) / (1 + SNR)
+%   E[NBP/WBP] = (M * SNR + 1) / (SNR + 1)
 % where SNR = Pav / (2*sigma^2)
+
+%% Strip data bits from I if provided ======================================
+if nargin >= 5 && ~isempty(dataBits)
+    I_nbp = I .* dataBits;
+else
+    I_nbp = I;
+end
 
 %% Compute wideband power ====================================================
 WBP = sum(I.^2 + Q.^2);
@@ -58,20 +71,20 @@ WBP = sum(I.^2 + Q.^2);
 %% Compute narrowband power ================================================
 numGroups = K / M;
 
-I_groups = sum(reshape(I, M, numGroups), 1);
+I_groups = sum(reshape(I_nbp, M, numGroups), 1);
 Q_groups = sum(reshape(Q, M, numGroups), 1);
 NBP = sum(I_groups.^2 + Q_groups.^2);
 
 %% Estimate C/No from the power ratio ========================================
-% NBP/WBP ranges from 1 (pure signal) to M (pure noise)
+% NBP/WBP ranges from 1 (pure noise) to M (pure signal)
 P_ratio = NBP / WBP;
 
 % Clamp P_ratio to avoid numerical instability
 P_ratio = max(1.001, min(M - 0.001, P_ratio));
 
-% Solve SNR from: P_ratio = (M + SNR) / (1 + SNR)
-%   => SNR = (M - P_ratio) / (P_ratio - 1)
-SNR_linear = (M - P_ratio) / (P_ratio - 1);
+% Solve SNR from: P_ratio = (M * SNR + 1) / (SNR + 1)
+%   => SNR = (P_ratio - 1) / (M - P_ratio)
+SNR_linear = (P_ratio - 1) / (M - P_ratio);
 
 % Convert to C/No in dB-Hz
 CNo = 10 * log10(SNR_linear / T);

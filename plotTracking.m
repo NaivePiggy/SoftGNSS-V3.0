@@ -182,10 +182,11 @@ for channelNr = channelList
         end
         hold(handles(4, 1), 'off');
 
-        grid(handles(4, 1));
+        grid  (handles(4, 1));
+        axis  (handles(3, 3), 'tight');
         xlabel(handles(4, 1), 'Time (s)');
         ylabel(handles(4, 1), 'C/N_0 (dB-Hz)');
-        title(handles(4, 1), 'Estimated C/N_0');
+        title (handles(4, 1), 'Estimated C/N_0');
 
         cnoLegend = {};
         if (settings.CNo.enableVSM == 1), cnoLegend{end+1} = 'VSM'; end
