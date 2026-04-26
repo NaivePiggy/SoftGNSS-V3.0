@@ -1,4 +1,6 @@
 /.claude
-navSolutions.mat
-*.asv
 /data
+*.asv
+*.mat
+
+

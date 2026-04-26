@@ -73,11 +73,11 @@ if discriminant > 0
     if M2 > D
         SNR_linear = D / (M2 - D);
     else
-        SNR_linear = 1e-6;  % Near-zero SNR floor
+        SNR_linear = 0.01;  % Weak signal floor (~10 dB-Hz)
     end
 else
-    % Pure noise or numerical error: discriminant <= 0
-    SNR_linear = 1e-6;
+    % Discriminant <= 0 due to noisy estimates: signal too weak to measure
+    SNR_linear = 0.01;  % Reasonable floor instead of -30 dB-Hz artifact
 end
 
 % Convert to C/No in dB-Hz
