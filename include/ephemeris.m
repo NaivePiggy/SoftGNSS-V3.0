@@ -102,7 +102,7 @@
 % % % %             eph.health      = bin2dec(subframe(77:82));
 % % % %             eph.T_GD        = twosComp2dec(subframe(197:204)) * 2^(-31);
 % % % %             eph.IODC        = bin2dec([subframe(83:84) subframe(197:204)]);
-% % % %             eph.t_oc        = bin2dec(subframe(219:234)) * 2^4;
+% % % %             eph.t_oc        = bin2dec(subframe(219:234)) * 2^4;;
 % % % %             eph.a_f2        = twosComp2dec(subframe(241:248)) * 2^(-55);
 % % % %             eph.a_f1        = twosComp2dec(subframe(249:264)) * 2^(-43);
 % % % %             eph.a_f0        = twosComp2dec(subframe(271:292)) * 2^(-31);
@@ -124,7 +124,7 @@
 % % % %             eph.sqrtA       = ...
 % % % %                 bin2dec([subframe(227:234) subframe(241:264)]) ...
 % % % %                 * 2^(-19);
-% % % %             eph.t_oe        = bin2dec(subframe(271:286)) * 2^4;
+% % % %             eph.t_oe        = bin2dec(subframe(271:286)) * 2^4;;
 % % % % 
 % % % %         case 3  %--- It is subframe 3 -------------------------------------
 % % % %             % It contains second part of ephemeris parameters
@@ -141,7 +141,7 @@
 % % % %                 twosComp2dec([subframe(197:204) subframe(211:234)]) ...
 % % % %                 * 2^(-31) * gpsPi;
 % % % %             eph.omegaDot    = twosComp2dec(subframe(241:264)) * 2^(-43) * gpsPi;
-% % % %             eph.IODE_sf3    = bin2dec(subframe(271:278));
+% % % %             eph.IODE_sf3    = bin2dec(subframe(271:278));;
 % % % %             eph.iDot        = twosComp2dec(subframe(279:292)) * 2^(-43) * gpsPi;
 % % % % 
 % % % %         case 4  %--- It is subframe 4 -------------------------------------
@@ -272,7 +272,7 @@ for i = 1:5
             eph.health      = bin2dec(subframe(77:82));
             eph.T_GD        = twosComp2dec(subframe(197:204)) * 2^(-31);
             eph.IODC        = bin2dec([subframe(83:84) subframe(197:204)]);
-            eph.t_oc        = bin2dec(subframe(219:234)) * 2^4
+            eph.t_oc        = bin2dec(subframe(219:234)) * 2^4;
             eph.a_f2        = twosComp2dec(subframe(241:248)) * 2^(-55);
             eph.a_f1        = twosComp2dec(subframe(249:264)) * 2^(-43);
             eph.a_f0        = twosComp2dec(subframe(271:292)) * 2^(-31);
@@ -294,7 +294,7 @@ for i = 1:5
             eph.sqrtA       = ...
                 bin2dec([subframe(227:234) subframe(241:264)]) ...
                 * 2^(-19);
-            eph.t_oe        = bin2dec(subframe(271:286)) * 2^4
+            eph.t_oe        = bin2dec(subframe(271:286)) * 2^4;
 
         case 3  %--- It is subframe 3 -------------------------------------
             % It contains second part of ephemeris parameters
@@ -311,7 +311,7 @@ for i = 1:5
                 twosComp2dec([subframe(197:204) subframe(211:234)]) ...
                 * 2^(-31) * gpsPi;
             eph.omegaDot    = twosComp2dec(subframe(241:264)) * 2^(-43) * gpsPi;
-            eph.IODE_sf3    = bin2dec(subframe(271:278))
+            eph.IODE_sf3    = bin2dec(subframe(271:278));
             eph.iDot        = twosComp2dec(subframe(279:292)) * 2^(-43) * gpsPi;
 
         case 4  %--- It is subframe 4 -------------------------------------
@@ -332,5 +332,5 @@ end % for all 5 sub-frames ...
 % Also correct the TOW. The transmitted TOW is actual TOW of the next
 % subframe and we need the TOW of the first subframe in this data block
 % (the variable subframe at this point contains bits of the last subframe).
-eph.TOW = bin2dec(subframe(31:47)) * 6
+eph.TOW = bin2dec(subframe(31:47)) * 6;
 TOW = bin2dec(subframe(31:47)) * 6 - 30;
