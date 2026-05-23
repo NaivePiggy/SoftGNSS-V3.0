@@ -101,15 +101,18 @@ for channelNr = channelList
         xlabel(handles(1, 2), 'Time (s)');
         axis  (handles(1, 2), 'tight');
 
-        %----- PLL discriminator unfiltered--------------------------------
+        %----- PLL/FLL discriminator unfiltered --------------------------------
         plot  (handles(2, 1), timeAxisInSeconds, ...
-                              trackResults(channelNr).pllDiscr, 'r');      
+                              trackResults(channelNr).pllDiscr, 'r', ...
+                              timeAxisInSeconds, ...
+                              trackResults(channelNr).fllDiscr, 'g');
 
         grid  (handles(2, 1));
         axis  (handles(2, 1), 'tight');
         xlabel(handles(2, 1), 'Time (s)');
-        ylabel(handles(2, 1), 'Amplitude');
-        title (handles(2, 1), 'Raw PLL discriminator');
+        ylabel(handles(2, 1), 'Cycles');
+        title (handles(2, 1), 'Raw PLL/FLL discriminator');
+        legend(handles(2, 1), 'PLL', 'FLL');
 
         %----- Correlation ------------------------------------------------
         plot(handles(2, 2), timeAxisInSeconds, ...
@@ -133,15 +136,18 @@ for channelNr = channelList
         %set interpreter from tex to latex. This will draw \sqrt correctly
         set(hLegend, 'Interpreter', 'Latex');
 
-        %----- PLL discriminator filtered----------------------------------
+        %----- PLL/FLL discriminator filtered ----------------------------------
         plot  (handles(3, 1), timeAxisInSeconds, ...
-                              trackResults(channelNr).pllDiscrFilt, 'b');      
+                              trackResults(channelNr).pllDiscrFilt, 'b', ...
+                              timeAxisInSeconds, ...
+                              trackResults(channelNr).fllDiscrFilt, 'm');
 
         grid  (handles(3, 1));
         axis  (handles(3, 1), 'tight');
         xlabel(handles(3, 1), 'Time (s)');
-        ylabel(handles(3, 1), 'Amplitude');
-        title (handles(3, 1), 'Filtered PLL discriminator');
+        ylabel(handles(3, 1), 'Frequency (Hz)');
+        title (handles(3, 1), 'Filtered PLL/FLL discriminator');
+        legend(handles(3, 1), 'PLL', 'FLL');
 
         %----- DLL discriminator unfiltered--------------------------------
         plot  (handles(3, 2), timeAxisInSeconds, ...

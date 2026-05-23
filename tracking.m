@@ -81,6 +81,8 @@ trackResults.dllDiscr       = inf(1, settings.msToProcess);
 trackResults.dllDiscrFilt   = inf(1, settings.msToProcess);
 trackResults.pllDiscr       = inf(1, settings.msToProcess);
 trackResults.pllDiscrFilt   = inf(1, settings.msToProcess);
+trackResults.fllDiscr       = inf(1, settings.msToProcess);
+trackResults.fllDiscrFilt   = inf(1, settings.msToProcess);
 
 %C/No
 trackResults.CNo.VSMValue = ...
@@ -127,6 +129,13 @@ PDIcarr = 0.001;
 [tau1carr, tau2carr] = calcLoopCoef(settings.pllNoiseBandwidth, ...
     settings.pllDampingRatio, ...
     0.25);
+
+%--- FLL variables ---------------------------------------------------------
+% Calculate FLL filter coefficient values
+[tau1fll, tau2fll] = calcLoopCoef(settings.fllNoiseBandwidth, ...
+    settings.fllDampingRatio, ...
+    1.0);
+
 hwb = waitbar(0,'Tracking...','Visible','off');
 
 %Adjust the size of the waitbar to insert text
@@ -184,6 +193,12 @@ for channelNr = 1:settings.numberOfChannels
         %carrier/Costas loop parameters
         oldCarrNco   = 0.0;
         oldCarrError = 0.0;
+
+        %FLL loop parameters
+        oldFllNco   = 0.0;
+        oldFllError = 0.0;
+        prevI_P     = 0.0;
+        prevQ_P     = 0.0;
 
         %C/No computation
         vsmCnt  = 0;
@@ -320,6 +335,31 @@ for channelNr = 1:settings.numberOfChannels
             I_L = sum(lateCode   .* iBasebandSignal);
             Q_L = sum(lateCode   .* qBasebandSignal);
 
+            %% Find FLL error and update carrier frequency basis --------------------
+
+            % FLL discriminator, skip first iteration. The discriminator
+            % returns phase change in cycles over one integration interval;
+            % the loop filter converts this to a frequency correction.
+            if loopCnt > 1
+                fllError = fllDiscriminator(prevI_P, prevQ_P, I_P, Q_P);
+
+                % FLL filter
+                fllNco = oldFllNco + (tau2fll/tau1fll) * ...
+                    (fllError - oldFllError) + fllError * (PDIcarr/tau1fll);
+                oldFllNco   = fllNco;
+                oldFllError = fllError;
+
+                % Update carrier frequency basis
+                carrFreqBasis = channel(channelNr).acquiredFreq + fllNco;
+            else
+                fllError = 0;
+                fllNco   = 0;
+            end
+
+            % Store previous I_P/Q_P for next FLL iteration
+            prevI_P = I_P;
+            prevQ_P = Q_P;
+
             %% Find PLL error and update carrier NCO ----------------------------------
 
             % Implement carrier loop discriminator (phase detector)
@@ -360,6 +400,8 @@ for channelNr = 1:settings.numberOfChannels
             trackResults(channelNr).dllDiscrFilt(loopCnt)   = codeNco;
             trackResults(channelNr).pllDiscr(loopCnt)       = carrError;
             trackResults(channelNr).pllDiscrFilt(loopCnt)   = carrNco;
+            trackResults(channelNr).fllDiscr(loopCnt)       = fllError;
+            trackResults(channelNr).fllDiscrFilt(loopCnt)   = fllNco;
 
             trackResults(channelNr).I_E(loopCnt) = I_E;
             trackResults(channelNr).I_P(loopCnt) = I_P;
