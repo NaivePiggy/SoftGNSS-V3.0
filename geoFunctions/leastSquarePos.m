@@ -51,6 +51,7 @@ az = zeros(1, nmbOfSatellites);
 el = az;
 
 if nmbOfSatellites < 4
+    posvel = nan(1, 8);
     return
 end
 
@@ -129,6 +130,7 @@ for iter = 1:nmbOfIterations
     weightedOmc = omc .* sqrtWeights;
 
     if rank(weightedA) ~= 4
+        posvel = nan(1, 8);
         return
     end
 
@@ -156,12 +158,17 @@ for i = 1:nmbOfSatellites
     satvel = vX(:, i)';
     a(i, :) = (X(:, i)' - pos(1:3)) / r;
 
-    % If Doppler is reversed.
-    d(i, 1) = settings.c * (-freqforcal(i) + settings.IF) / ...
-        1575.42e6 + sum(satvel .* a(i, :));
-    % If Doppler is normal.
-%   d(i, 1) = settings.c * (freqforcal(i) - settings.IF) / ...
-%       1575.42e6 + sum(satvel .* a(i, :));
+    % Doppler convention (configurable; GN3S uses convention 2).
+    if getPositioningSetting(settings, 'dopplerConvention', 2) == 1
+        % Reversed:  f_doppler = -(freqforcal - IF)
+        dopplerRangeRate = settings.c * (-freqforcal(i) + settings.IF) / ...
+            1575.42e6;
+    else
+        % Normal:    f_doppler = freqforcal - IF
+        dopplerRangeRate = settings.c * (freqforcal(i) - settings.IF) / ...
+            1575.42e6;
+    end
+    d(i, 1) = dopplerRangeRate + sum(satvel .* a(i, :));
 
     HH(i, :) = [a(i, :), 1];
 end
@@ -171,7 +178,7 @@ weightedD = d .* sqrtWeights;
 if rank(weightedHH) == 4
     vel = weightedHH \ weightedD;
 else
-    vel = zeros(4, 1);
+    vel = nan(4, 1);
 end
 
 posvel = [pos, vel'];

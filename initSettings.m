@@ -125,6 +125,10 @@ settings.positioning.minElevationWeight = 5;    %[degrees]
 settings.positioning.minWeight        = 0.05;
 settings.positioning.robustTune       = 1.5;
 settings.positioning.robustMinSigma   = 10;     %[m]
+% Doppler convention for velocity estimation:
+%   1 = reversed: d = c*(IF - freq)/f_L1 + satvel·LOS
+%   2 = normal:   d = c*(freq - IF)/f_L1 + satvel·LOS (correct for GN3S)
+settings.positioning.dopplerConvention = 2;
 
 % True position of the antenna in UTM system (if known). Otherwise enter
 % all NaN's and mean position will be used as a reference .
