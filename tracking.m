@@ -136,6 +136,21 @@ PDIcarr = 0.001;
     settings.fllDampingRatio, ...
     1.0);
 
+enableFLL = true;
+if isfield(settings, 'enableFLL')
+    enableFLL = (settings.enableFLL ~= 0);
+end
+
+fllHandoffTime = inf;
+if isfield(settings, 'fllHandoffTime') && (settings.fllHandoffTime > 0)
+    fllHandoffTime = settings.fllHandoffTime;
+end
+
+fllMaxFreqOffset = inf;
+if isfield(settings, 'fllMaxFreqOffset') && (settings.fllMaxFreqOffset > 0)
+    fllMaxFreqOffset = settings.fllMaxFreqOffset;
+end
+
 hwb = waitbar(0,'Tracking...','Visible','off');
 
 %Adjust the size of the waitbar to insert text
@@ -182,7 +197,6 @@ for channelNr = 1:settings.numberOfChannels
         remCodePhase  = 0.0;
         % define carrier frequency which is used over whole tracking period
         carrFreq      = channel(channelNr).acquiredFreq;
-        carrFreqBasis = channel(channelNr).acquiredFreq;
         % define residual carrier phase
         remCarrPhase  = 0.0;
 
@@ -276,7 +290,7 @@ for channelNr = 1:settings.numberOfChannels
             if (dataAdaptCoeff==2)
                 rawSignal1=rawSignal(1:2:end);
                 rawSignal2=rawSignal(2:2:end);
-                rawSignal = rawSignal1 + i .* rawSignal2;  %transpose vector
+                rawSignal = rawSignal1 + 1i .* rawSignal2;  %transpose vector
             end
 
             % If did not read in enough samples, then could be out of
@@ -320,7 +334,7 @@ for channelNr = 1:settings.numberOfChannels
             remCarrPhase = rem(trigarg(blksize+1), (2 * pi));
 
             % Finally compute the signal to mix the collected data to bandband
-            carrsig = exp(i .* trigarg(1:blksize));
+            carrsig = exp(1i .* trigarg(1:blksize));
 
             %% Generate the six standard accumulated values ---------------------------
             % First mix to baseband
@@ -340,21 +354,30 @@ for channelNr = 1:settings.numberOfChannels
             % FLL discriminator, skip first iteration. The discriminator
             % returns phase change in cycles over one integration interval;
             % the loop filter converts this to a frequency correction.
-            if loopCnt > 1
+            if enableFLL && loopCnt > 1 && loopCnt <= fllHandoffTime
                 fllError = fllDiscriminator(prevI_P, prevQ_P, I_P, Q_P);
 
                 % FLL filter
                 fllNco = oldFllNco + (tau2fll/tau1fll) * ...
                     (fllError - oldFllError) + fllError * (PDIcarr/tau1fll);
+                if isfinite(fllMaxFreqOffset)
+                    fllNco = min(max(fllNco, -fllMaxFreqOffset), ...
+                        fllMaxFreqOffset);
+                end
                 oldFllNco   = fllNco;
                 oldFllError = fllError;
-
-                % Update carrier frequency basis
-                carrFreqBasis = channel(channelNr).acquiredFreq + fllNco;
+            elseif enableFLL
+                % After handoff, hold the final FLL pull-in estimate and
+                % let the PLL carry the residual carrier tracking.
+                fllError = 0;
+                fllNco   = oldFllNco;
             else
                 fllError = 0;
                 fllNco   = 0;
             end
+
+            % Update carrier frequency basis
+            carrFreqBasis = channel(channelNr).acquiredFreq + fllNco;
 
             % Store previous I_P/Q_P for next FLL iteration
             prevI_P = I_P;

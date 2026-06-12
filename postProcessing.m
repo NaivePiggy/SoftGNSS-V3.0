@@ -114,6 +114,7 @@ if (fid > 0)
         % No satellites to track, exit
         disp('No GNSS signals detected, signal processing finished.');
         trackResults = [];
+        fclose(fid);
         return;
     end
 
@@ -138,13 +139,15 @@ if (fid > 0)
         disp('   Saving Acq & Tracking results to file "trackingResults.mat"')
         save('trackingResults', ...
             'trackResults', 'settings', 'acqResults', 'channel');
-%%%%%%%%%% when delete, uncomment above
-    load trackingResults
 
     else
-        disp('skip scalar tracking, load exisiting results')
+        disp('skip scalar tracking, load existing results')
 
-        load 'trackingResults'
+        savedTracking = load('trackingResults', ...
+            'trackResults', 'acqResults', 'channel');
+        trackResults = savedTracking.trackResults;
+        acqResults   = savedTracking.acqResults;
+        channel      = savedTracking.channel;
         settings.VLLen = 1;
     end
 
@@ -159,23 +162,33 @@ if (fid > 0)
         disp('skip postNavigation, load existing navSolution')
         %input the path and file name of the existing navSolution saved
         %from scalar tracking and calculation
-        load 'navSolutions'
+        savedNav = load('navSolutions', ...
+            'navSolutions', 'eph', 'svTimeTable', 'activeChnList');
+        navSolutions = savedNav.navSolutions;
+        eph          = savedNav.eph;
+        svTimeTable  = savedNav.svTimeTable;
+        activeChnList = savedNav.activeChnList;
         disp('start vector tracking')
-        return;
 %         load 'C:\Users\gps\Desktop\SihaoZ\dynamic\9_13_2010_14h_53min_25s\navSolutionscarfig8allfading190spll10dll1'
                 %start vector tracking
         [trackResults_v, channel] = trackingv(fid, channel,trackResults,navSolutions,eph,activeChnList,svTimeTable, settings);
+        fclose(fid);
         save('trackResults_v','trackResults_v');
     end
 
     disp('   Processing is complete for this data block');
     %% Plot all results ===================================================
     disp ('   Ploting results...');
-    if settings.plotTracking
-        plotTracking(1:settings.numberOfChannels, trackResults, settings);
-    end
+    if ~settings.VLLen
+        if settings.plotTracking
+            plotTracking(1:settings.numberOfChannels, trackResults, settings);
+        end
 
-    plotNavigation(navSolutions, settings);
+        plotNavigation(navSolutions, settings);
+    else
+        disp('   Vector tracking results saved to "trackResults_v.mat".')
+        disp('   Scalar navigation plots are skipped for vector-tracking runs.')
+    end
 
     disp('Post processing of the signal is over.');
 

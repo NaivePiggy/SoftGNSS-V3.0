@@ -7,7 +7,7 @@
 % by Borre, Akos, et.al.
 %-----------------------------------------------------------------------------------
 function fllError = fllDiscriminator(prevI, prevQ, currI, currQ)
-% Two-quadrant FLL discriminator for adjacent prompt correlator outputs.
+% Folded atan2 FLL discriminator for adjacent prompt correlator outputs.
 %
 %fllError = fllDiscriminator(prevI, prevQ, currI, currQ)
 %
@@ -46,14 +46,16 @@ function fllError = fllDiscriminator(prevI, prevQ, currI, currQ)
 dotProduct = prevI * currI + prevQ * currQ;
 crossProduct = prevI * currQ - prevQ * currI;
 
-if (dotProduct == 0)
-    if (crossProduct > 0)
-        fllError = 0.25;
-    elseif (crossProduct < 0)
-        fllError = -0.25;
-    else
-        fllError = 0;
-    end
+if (dotProduct == 0) && (crossProduct == 0)
+    fllError = 0;
 else
-    fllError = atan(crossProduct / dotProduct) / (2.0 * pi);
+    fllError = atan2(crossProduct, dotProduct) / (2.0 * pi);
+
+    % Fold the phase difference into +/-0.25 cycles. This keeps the
+    % discriminator insensitive to 180-degree navigation data bit flips.
+    if fllError > 0.25
+        fllError = fllError - 0.5;
+    elseif fllError < -0.25
+        fllError = fllError + 0.5;
+    end
 end

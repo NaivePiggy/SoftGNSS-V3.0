@@ -34,3 +34,16 @@ errorWithFlip = fllDiscriminator(100, 0, ...
 verifyEqual(testCase, errorNoFlip, phaseDeltaCycles, 'AbsTol', 1e-12);
 verifyEqual(testCase, errorWithFlip, phaseDeltaCycles, 'AbsTol', 1e-12);
 end
+
+function testFoldedAtan2KeepsDataBitFlipEquivalent(testCase)
+phaseDeltaCycles = -0.2;
+phaseDelta = 2 * pi * phaseDeltaCycles;
+
+errorNoFlip = fllDiscriminator(100, 0, ...
+    100 * cos(phaseDelta), 100 * sin(phaseDelta));
+errorWithFlip = fllDiscriminator(100, 0, ...
+    -100 * cos(phaseDelta), -100 * sin(phaseDelta));
+
+verifyEqual(testCase, errorNoFlip, phaseDeltaCycles, 'AbsTol', 1e-12);
+verifyEqual(testCase, errorWithFlip, phaseDeltaCycles, 'AbsTol', 1e-12);
+end

@@ -95,6 +95,14 @@ settings.pllDampingRatio         = 0.7;
 settings.pllNoiseBandwidth       = 6.5;      %[Hz]
 settings.fllDampingRatio         = 0.7;
 settings.fllNoiseBandwidth       = 10;      %[Hz]
+% Enable/disable FLL-assisted PLL carrier tracking
+settings.enableFLL               = 1;
+% FLL pull-in duration before handing carrier tracking to PLL only.
+% Set to 0 to keep FLL assistance active for the whole tracking run.
+settings.fllHandoffTime          = 2000;    %[ms]
+% Maximum absolute FLL frequency correction applied to acquisition carrier.
+% Set to 0 to disable limiting.
+settings.fllMaxFreqOffset        = 5000;    %[Hz]
 
 
 
@@ -109,6 +117,14 @@ settings.elevationMask      = 10;           %[degrees 0 - 90]
 % Enable/dissable use of tropospheric correction
 settings.useTropCorr        = 0;            % 0 - Off
 % 1 - On
+
+% Positioning solution robustness controls
+settings.positioning.enableWeightedLS = 1;
+settings.positioning.enableRobustLS   = 1;
+settings.positioning.minElevationWeight = 5;    %[degrees]
+settings.positioning.minWeight        = 0.05;
+settings.positioning.robustTune       = 1.5;
+settings.positioning.robustMinSigma   = 10;     %[m]
 
 % True position of the antenna in UTM system (if known). Otherwise enter
 % all NaN's and mean position will be used as a reference .
