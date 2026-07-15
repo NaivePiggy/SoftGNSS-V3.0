@@ -1,4 +1,6 @@
-/.claude
+/.claude/
+/.codex/
+/.vs/
 /data
 *.asv
 *.mat
