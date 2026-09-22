@@ -1,0 +1,20 @@
+# ---------------------------------------------------------------------------
+# Line-ending and binary policy for SoftGNSS v3.0
+#
+# This file is the repository's authoritative policy: it overrides every
+# contributor's core.autocrlf, so a clone behaves the same on Windows, Linux
+# and macOS. Before it existed the history held a mix of LF, CRLF and even
+# files with both endings on different lines.
+#
+# Text files are normalized to LF in the repository AND checked out as LF.
+# LF is what the upstream (Linux) history already used, MATLAB R2025b reads
+# it natively, and it is what editors and tooling write by default here.
+# ---------------------------------------------------------------------------
+
+# Text files: normalize on commit, keep LF in the working tree.
+* text=auto eol=lf
+
+# Binary files: never apply any end-of-line conversion.
+*.fig binary
+*.bin binary
+*.mat binary
