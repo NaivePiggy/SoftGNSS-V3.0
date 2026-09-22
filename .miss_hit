@@ -1,0 +1,52 @@
+# MISS_HIT configuration for SoftGNSS v3.0
+#
+# The defaults target Octave-style code. This repository is MATLAB-style
+# (4-space indentation, camelCase, top-level statements flush left) and
+# contains a large amount of inherited upstream SoftGNSS code, so rules
+# that only fire on the inherited house style are suppressed instead of
+# being "fixed": reformatting ~55 files would bury every real change.
+#
+# Run:  python -m miss_hit_core.mh_style --single .
+# (--single avoids multiprocessing, which needs pipes that confined
+#  sandboxes deny.)
+
+# --- indentation -------------------------------------------------------
+# Top-level statements in a function file are flush left in MATLAB; the
+# default expects the whole body indented (Octave style).
+indent_function_file_body: false
+tab_width: 4
+
+# Continuations in the inherited code sit at a fixed indent instead of
+# being aligned under the opening bracket, and they are not consistent
+# between files, so alignment is not enforced.
+align_round_brackets: false
+align_other_brackets: false
+
+# --- naming ------------------------------------------------------------
+# Upstream mixes camelCase, UPPERCASE, underscores and plain loop counters.
+regex_function_name:    "[A-Za-z][A-Za-z0-9_]*"
+regex_nested_name:      "[A-Za-z][A-Za-z0-9_]*"
+regex_parameter_name:   "[A-Za-z][A-Za-z0-9_]*"
+regex_method_name:      "[A-Za-z][A-Za-z0-9_]*"
+regex_attribute_name:   "[A-Za-z][A-Za-z0-9_]*"
+regex_script_name:      "[A-Za-z][A-Za-z0-9_]*"
+regex_class_name:       "[A-Za-z][A-Za-z0-9_]*"
+regex_enumeration_name: "[A-Za-z][A-Za-z0-9_]*"
+
+# --- line length -------------------------------------------------------
+# The upstream `%---...---` separators are 84 characters wide.
+line_length: 100
+
+# Rules suppressed because they only flag the inherited house style:
+suppress_rule: "whitespace_comments"        # `%text` with no space after %
+suppress_rule: "whitespace_colon"           # `1 : N` with spaces around ':'
+suppress_rule: "operator_whitespace"        # `a+b`, inherited from upstream
+suppress_rule: "whitespace_assignment"      # `x=y`, inherited from upstream
+suppress_rule: "whitespace_comma"           # `f(a,b)`, inherited from upstream
+suppress_rule: "whitespace_semicolon"       # inherited from upstream
+suppress_rule: "whitespace_continuation"    # `...` with no leading space
+suppress_rule: "operator_after_continuation"
+suppress_rule: "redundant_brackets"         # `if (guard)` style
+suppress_rule: "spurious_row_semicolon"
+suppress_rule: "end_of_statements"          # `break;` vs `break`, mixed upstream
+suppress_rule: "unicode"                    # non-ASCII in local docs/comments

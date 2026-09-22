@@ -1,8 +1,36 @@
+# ---------------------------------------------------------------------------
+# SoftGNSS v3.0 — local-only paths
+#
+# Patterns are root-anchored ("/...") so they only match at the repository
+# root and cannot accidentally swallow files deeper in the tree.
+# `git check-ignore -v <path>` reports which rule matched a given file.
+#
+# NOTE: .gitignore only affects UNTRACKED files. A path that is already
+# committed keeps being tracked until it is untracked explicitly:
+#     git rm -r --cached <path>
+# ---------------------------------------------------------------------------
+
+# --- AI assistant instructions (kept local) --------------------------------
+/AGENTS.md
+/CLAUDE.md
+
+# --- AI assistant / agent tooling configuration (kept local) ---------------
 /.claude/
 /.codex/
-/.vs/
+/.opencode/
+/opencode.json
+
+# --- working notes and generated reports (kept local) ----------------------
+/docs/
+
+# --- raw IF sample data and pipeline results -------------------------------
+# Downloaded sample files (945 MB / 625 MB) and the .mat intermediates the
+# pipeline writes: trackingResults.mat, navSolutions.mat, acqresults.mat, ...
 /data
-*.asv
 *.mat
 
+# --- IDE / editor state ----------------------------------------------------
+/.vs/
 
+# --- MATLAB autosave -------------------------------------------------------
+*.asv
